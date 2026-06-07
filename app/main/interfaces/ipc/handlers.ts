@@ -8,26 +8,17 @@ import { Transport } from '../../domain/entities/Transport';
 import { Grade } from '../../domain/entities/Grade';
 import { ReceiptVoucher } from '../../domain/entities/ReceiptVoucher';
 import { ReceiptVoucherLot } from '../../domain/entities/ReceiptVoucherLot';
-import { Like, Between } from 'typeorm';
+import { IssueVoucher } from '../../domain/entities/IssueVoucher';
+import { Between, Like } from 'typeorm';
 
 export function setupIpcHandlers() {
   const handleCrud = (entity: any, name: string) => {
     ipcMain.handle(`${name}:get-all`, async () => {
       try {
         const repository = AppDataSource.getRepository(entity);
-        return await repository.find({ order: { name: 'ASC' } });
+        return await repository.find({ order: { name: 'ASC' } as any });
       } catch (error) {
         console.error(`Error in ${name}:get-all:`, error);
-        throw error;
-      }
-    });
-
-    ipcMain.handle(`${name}:get-one`, async (_, id: string) => {
-      try {
-        const repository = AppDataSource.getRepository(entity);
-        return await repository.findOneBy({ id });
-      } catch (error) {
-        console.error(`Error in ${name}:get-one:`, error);
         throw error;
       }
     });
@@ -69,6 +60,171 @@ export function setupIpcHandlers() {
   handleCrud(Transport, 'transport');
   handleCrud(Grade, 'grade');
 
+  // Lot specific handler
+  ipcMain.handle('receipt-voucher-lot:get-one', async (_, id: string) => {
+    try {
+      const repository = AppDataSource.getRepository(ReceiptVoucherLot);
+      return await repository.findOne({ where: { id }, relations: ['garden'] });
+    } catch (error) {
+      console.error('Error in receipt-voucher-lot:get-one:', error);
+      throw error;
+    }
+  });
+
+  // Manual implementation of Issue Voucher CRUD to prevent registration conflicts
+  // ISSUE VOUCHER CRUD
+  ipcMain.handle('issue-voucher:get-next-no', async (_, firmId: string) => {
+    try {
+      const repository = AppDataSource.getRepository(IssueVoucher);
+      const firmRepository = AppDataSource.getRepository(Firm);
+      
+      const firm = await firmRepository.findOneBy({ id: firmId });
+      if (!firm) throw new Error('Firm not found');
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const fy = `${year.toString()}-${(year + 1).toString().slice(-2)}`;
+      
+      const lastVoucher = await repository.findOne({
+        where: { firm_id: firmId, voucher_no: Like(`I-${firm.code}/${fy}/%`) },
+        order: { createdAt: 'DESC', voucher_no: 'DESC' }
+      });
+
+      let nextNo = 1;
+      
+      if (lastVoucher) {
+        const parts = lastVoucher.voucher_no.split('/');
+        if (parts.length === 3) {
+           const lastFy = parts[1];
+           if (lastFy === fy) {
+             const lastNo = parseInt(parts[2]);
+             if (!isNaN(lastNo)) {
+               nextNo = lastNo + 1;
+             }
+           }
+        }
+      }
+      
+      return `I-${firm.code}/${fy}/${nextNo}`;
+    } catch (error) {
+      console.error('Error in issue-voucher:get-next-no:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('issue-voucher:get-all', async () => {
+    return await AppDataSource.getRepository(IssueVoucher).find({ order: { voucher_no: 'ASC' } as any });
+  });
+
+  ipcMain.handle('issue-voucher:get-one', async (_, id: string) => {
+    return await AppDataSource.getRepository(IssueVoucher).findOneBy({ id });
+  });
+
+  ipcMain.handle('issue-voucher:delete', async (_, id: string) => {
+    return await AppDataSource.getRepository(IssueVoucher).delete(id);
+  });
+
+  ipcMain.handle('issue-voucher:get-paginated', async (_, { page = 1, limit = 20, filters = {} }: any) => {
+    try {
+      const repository = AppDataSource.getRepository(IssueVoucher);
+      const where: any = {};
+      if (filters.voucher_no) where.voucher_no = Like(`%${filters.voucher_no}%`);
+      if (filters.firm_id) where.firm_id = filters.firm_id;
+      if (filters.challan_no) where.challan_no = Like(`%${filters.challan_no}%`);
+      if (filters.issue_date_from) where.issue_date = Between(filters.issue_date_from, filters.issue_date_to || filters.issue_date_from);
+      
+      // Filter by Lot details
+      if (filters.garden_id || filters.grade) {
+          where.lot = {};
+          if (filters.garden_id) where.lot.garden_id = filters.garden_id;
+          if (filters.grade) where.lot.grade = filters.grade;
+      }
+      
+      const [items, total] = await repository.findAndCount({
+        where,
+        relations: ['firm', 'party', 'lot', 'lot.garden'],
+        order: { issue_date: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+
+      return { items, total, page, totalPages: Math.ceil(total / limit) };
+    } catch (error) {
+      console.error('Error in issue-voucher:get-paginated:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('issue-voucher:save', async (_, data: any) => {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const repository = queryRunner.manager.getRepository(IssueVoucher);
+      const lotRepository = queryRunner.manager.getRepository(ReceiptVoucherLot);
+
+      // Backend stock validation
+      const lot = await lotRepository.findOneBy({ id: data.receipt_voucher_lot_id });
+      if (!lot) throw new Error('Selected lot not found');
+
+      // Calculate already issued quantities
+      const existingIssues = await repository.createQueryBuilder('issue')
+        .where('issue.receipt_voucher_lot_id = :lotId', { lotId: data.receipt_voucher_lot_id })
+        .andWhere('issue.id != :issueId', { issueId: data.id || 'new' })
+        .getMany();
+      
+      const issuedBags = existingIssues.reduce((sum, i) => sum + i.no_of_bags, 0);
+      const issuedWeight = existingIssues.reduce((sum, i) => sum + Number(i.net_weight), 0);
+
+      if (Number(data.no_of_bags) + issuedBags > lot.total_bags) {
+        throw new Error('Not enough bags available in the selected lot.');
+      }
+      
+      // Allow small tolerance for floating point comparison
+      if (Number(data.net_weight) + issuedWeight > Number(lot.net_weight) + 0.001) {
+        throw new Error('Not enough weight available in the selected lot.');
+      }
+      
+      // Clean up data
+      const cleanData = { ...data };
+      if (!cleanData.party_id) cleanData.party_id = null;
+      
+      const savedVoucher = await repository.save(cleanData);
+      
+      await queryRunner.commitTransaction();
+      return savedVoucher;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error in issue-voucher:save:', error);
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  });
+
+  // Available Stock Query
+  ipcMain.handle('stock:get-available', async (_, excludeIssueId?: string) => {
+    try {
+      const repository = AppDataSource.getRepository(ReceiptVoucherLot);
+      return await repository.createQueryBuilder('lot')
+        .leftJoinAndSelect('lot.garden', 'garden')
+        .leftJoin('issue_vouchers', 'issue', `issue.receipt_voucher_lot_id = lot.id ${ excludeIssueId ? `AND issue.id != '${excludeIssueId}'` : ''}`)
+        .select('lot.id', 'id')
+        .addSelect('lot.lot_no', 'lot_no')
+        .addSelect('lot.grade', 'grade')
+        .addSelect('garden.name', 'garden_name')
+        .addSelect('lot.total_bags - SUM(COALESCE(issue.no_of_bags, 0))', 'available_bags')
+        .addSelect('lot.net_weight - SUM(COALESCE(issue.net_weight, 0))', 'available_weight')
+        .addSelect('lot.weight_per_bag', 'weight_per_bag')
+        .groupBy('lot.id')
+        .having('available_bags > 0')
+        .getRawMany();
+    } catch (error) {
+      console.error('Error in stock:get-available:', error);
+      throw error;
+    }
+  });
+
   // RECEIPT VOUCHER CRUD
   ipcMain.handle('receipt-voucher:get-next-no', async (_, firmId: string) => {
     try {
@@ -82,7 +238,6 @@ export function setupIpcHandlers() {
       const year = now.getFullYear();
       const fy = `${year.toString()}-${(year + 1).toString().slice(-2)}`;
       
-      // Get last voucher for this firm
       const lastVoucher = await repository.findOne({
         where: { firm_id: firmId, voucher_no: Like(`${firm.code}/${fy}/%`) },
         order: { createdAt: 'DESC', voucher_no: 'DESC' }
@@ -91,7 +246,6 @@ export function setupIpcHandlers() {
       let nextNo = 1;
       
       if (lastVoucher) {
-        // Assume format [FIRM_CODE]/[FY]/[NO]
         const parts = lastVoucher.voucher_no.split('/');
         if (parts.length === 3) {
            const lastFy = parts[1];
@@ -115,13 +269,10 @@ export function setupIpcHandlers() {
     try {
       const repository = AppDataSource.getRepository(ReceiptVoucher);
       const where: any = {};
-
       if (filters.voucher_no) where.voucher_no = Like(`%${filters.voucher_no}%`);
       if (filters.firm_id) where.firm_id = filters.firm_id;
       if (filters.party_id) where.party_id = filters.party_id;
       if (filters.bill_no) where.bill_no = Like(`%${filters.bill_no}%`);
-      
-      // Date filters (simplified, usually need a range or specific logic)
       if (filters.bill_date) where.bill_date = filters.bill_date;
       if (filters.gr_no) where.gr_no = Like(`%${filters.gr_no}%`);
       if (filters.transport_id) where.transport_id = filters.transport_id;
@@ -151,14 +302,11 @@ export function setupIpcHandlers() {
       const lotRepo = queryRunner.manager.getRepository(ReceiptVoucherLot);
 
       const { lots, ...voucherData } = data;
+      // Ensure null is passed if party_id is not set
+      if (!voucherData.party_id) voucherData.party_id = null;
       
-      // Save Voucher
       const savedVoucher = await voucherRepo.save(voucherData);
 
-      // Handle Lots (Simple strategy: delete existing and re-insert for updates)
-      // TODO: Check if there exists an issue voucher for any of the lot:
-      // If YES: throw error that 'This Receipt Voucher cannot be updated as it has associated issue voucher'
-      // if NO: proceed with deletion and insertion
       if (voucherData.id) {
         await lotRepo.delete({ voucher_id: voucherData.id });
       }
@@ -166,7 +314,7 @@ export function setupIpcHandlers() {
       const lotsToSave = lots.map((lot: any) => ({
         ...lot,
         voucher_id: savedVoucher.id,
-        id: undefined, // ensure new IDs for lots if re-inserting
+        id: undefined,
       }));
 
       await lotRepo.save(lotsToSave);
@@ -186,13 +334,6 @@ export function setupIpcHandlers() {
     try {
       const voucherRepo = AppDataSource.getRepository(ReceiptVoucher);
       const lotRepo = AppDataSource.getRepository(ReceiptVoucherLot);
-      // TODO: check if there exist issue voucher for any of the lot:
-      // const lots = await lotRepo.find({ where: { voucher_id: id } });
-      // for(const lot of lots) {
-      //   // If YES: throw error that 'This Receipt Voucher cannot be deleted as it has associated issue voucher'
-      //   // if NO: proceed to delete
-      // }
-      
       await lotRepo.delete({ voucher_id: id });
       return await voucherRepo.delete(id);
     } catch (error) {

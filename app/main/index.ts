@@ -64,7 +64,7 @@ async function bootstrap() {
 
     if (isDev) {
       mainWindow.loadURL('http://localhost:5173');
-      mainWindow.webContents.openDevTools();
+      // mainWindow.webContents.openDevTools();
     } else {
       const indexPath = path.join(app.getAppPath(), 'dist/renderer/index.html');
       mainWindow.loadFile(indexPath);

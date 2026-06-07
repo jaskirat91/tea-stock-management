@@ -154,9 +154,11 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
         if (headerIdx < fieldOrder.length - 1) {
           const nextId = fieldOrder[headerIdx + 1];
           document.getElementById(nextId)?.focus();
+          // If it's a select, it will have a focusable child
           const selectChild = document.getElementById(nextId)?.querySelector('[tabindex="0"]') as HTMLElement;
           selectChild?.focus();
         } else {
+          // Move to first lot
           document.getElementById('lot-0-lot_no')?.focus();
         }
       } else if (headerIdx > 0) {
@@ -198,6 +200,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
           const el = document.getElementById(prevId);
           el?.focus();
         } else {
+          // Move back to header
           const lastHeaderId = fieldOrder[fieldOrder.length - 1];
           document.getElementById(lastHeaderId)?.focus();
         }
@@ -484,7 +487,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
                       <td className="px-2 py-2">
                         <SearchableSelect 
                           id={`lot-${idx}-grade`}
-                          options={masters.grades} 
+                          options={masters.grades.map((g: any) => ({id: g.name, name: g.name}))}
                           value={lot.grade} 
                           onChange={name => handleLotChange(idx, 'grade', name)} 
                           onSelect={() => moveFocus(`lot-${idx}-grade`, 'next')}

@@ -6,6 +6,7 @@ import { MnemonicLabel } from './components/MnemonicLabel';
 import { ThemeToggle } from './components/ThemeToggle';
 import MasterModule from './modules/masters/MasterModule';
 import ReceiptVoucherModule from './modules/vouchers/ReceiptVoucherModule';
+import IssueVoucherModule from './modules/vouchers/IssueVoucherModule';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { 
   LayoutDashboard, 
@@ -286,13 +287,8 @@ const App: React.FC = () => {
               <ReceiptVoucherModule />
             )}
 
-            {/* Vouchers Placeholder */}
             {currentModule === 'Issue Voucher' && (
-              <div className="p-8 rounded-2xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 border-dashed text-center">
-                <p className="text-slate-500 dark:text-slate-400 italic">
-                  {currentModule} is under construction...
-                </p>
-              </div>
+              <IssueVoucherModule />
             )}
           </div>
         </div>

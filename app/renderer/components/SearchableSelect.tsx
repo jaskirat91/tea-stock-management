@@ -97,7 +97,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`} ref={containerRef} id={id}>
+    <div className={`relative ${className}`} ref={containerRef}>
       {label && (
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           {label} {required && <span className="text-red-500">*</span>}
@@ -105,6 +105,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       )}
       
       <div 
+        id={id}
         tabIndex={0}
         className={`flex items-center justify-between px-4 py-2 bg-white dark:bg-black/20 border ${isOpen ? 'border-primary ring-2 ring-primary/20' : 'border-black/10 dark:border-white/10'} rounded-lg cursor-pointer transition-all text-sm outline-none focus:ring-2 focus:ring-primary`}
         onClick={() => {

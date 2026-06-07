@@ -8,6 +8,7 @@ import { Transport } from "../../domain/entities/Transport";
 import { Grade } from "../../domain/entities/Grade";
 import { ReceiptVoucher } from "../../domain/entities/ReceiptVoucher";
 import { ReceiptVoucherLot } from "../../domain/entities/ReceiptVoucherLot";
+import { IssueVoucher } from "../../domain/entities/IssueVoucher";
 import path from "node:path";
 import { app } from "electron";
 
@@ -29,7 +30,8 @@ export const AppDataSource = new DataSource({
     Transport, 
     Grade, 
     ReceiptVoucher, 
-    ReceiptVoucherLot
+    ReceiptVoucherLot,
+    IssueVoucher
   ],
   migrations: [],
   subscribers: [],
