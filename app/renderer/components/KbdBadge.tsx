@@ -7,7 +7,7 @@ interface KbdBadgeProps {
 
 export const KbdBadge: React.FC<KbdBadgeProps> = ({ keys, className }) => {
   return (
-    <kbd className={`px-1.5 py-0.5 text-[10px] font-medium bg-white/10 border border-white/20 rounded-md text-slate-400 select-none ${className}`}>
+    <kbd className={`px-1 py-0.5 text-sm font-light text-center tracking-[3px] bg-white/10 border border-white/20 rounded-md select-none ${className}`}>
       {keys}
     </kbd>
   );
