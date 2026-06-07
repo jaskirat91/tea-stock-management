@@ -7,6 +7,7 @@ import { ThemeToggle } from './components/ThemeToggle';
 import MasterModule from './modules/masters/MasterModule';
 import ReceiptVoucherModule from './modules/vouchers/ReceiptVoucherModule';
 import IssueVoucherModule from './modules/vouchers/IssueVoucherModule';
+import StockReportModule from './modules/reports/StockReportModule';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { 
   LayoutDashboard, 
@@ -60,6 +61,14 @@ const navConfig: NavMenu[] = [
     items: [
       { name: 'Receipt Voucher', icon: Receipt, mnemonic: 'R', route: 'Receipt Voucher' },
       { name: 'Issue Voucher', icon: ClipboardList, mnemonic: 'U', route: 'Issue Voucher' },
+    ]
+  },
+  {
+    name: 'Reports',
+    icon: FileText,
+    mnemonic: 'O',
+    items: [
+      { name: 'Stock Report', icon: Box, mnemonic: 'S', route: 'Stock Report' },
     ]
   },
   { name: 'Settings', icon: Settings, mnemonic: 'S', route: 'Settings' },
@@ -289,6 +298,10 @@ const App: React.FC = () => {
 
             {currentModule === 'Issue Voucher' && (
               <IssueVoucherModule />
+            )}
+
+            {currentModule === 'Stock Report' && (
+              <StockReportModule />
             )}
           </div>
         </div>
