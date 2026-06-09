@@ -200,18 +200,18 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
       </div>
 
       <div className="w-80 bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-4 shadow-sm h-fit">
-        <h3 className="font-bold mb-4">Available Stock</h3>
+        <h3 className="font-bold mb-4">Available Stock <br/>{selectedGarden && <small className="text-xs text-slate-600">({ selectedGarden })</small>}</h3>
         {selectedGarden ? (
-        <table className="w-full text-xs">
+        <table className="border w-full text-xs">
           <thead>
-            <tr><th className="text-left py-2">Grade</th><th className="text-right py-2">Bags</th><th className="text-right py-2">Weight</th></tr>
+            <tr><th className="border text-left py-2 px-1">Grade</th><th className="border text-right py-2 px-1">Avail. Bags</th><th className="border text-right py-2 px-1">Avail. WT.</th></tr>
           </thead>
           <tbody className="divide-y divide-black/5">
             {filteredStock.map((lot: any) => (
               <tr key={lot.id}>
-                <td className="py-2">{lot.grade}</td>
-                <td className="text-right py-2">{lot.available_bags}</td>
-                <td className="py-2 text-right">{Number(lot.available_weight).toFixed(2)}</td>
+                <td className="border py-2 px-1">{lot.grade}</td>
+                <td className="border text-right py-2 px-1">{lot.available_bags}</td>
+                <td className="border py-2 px-1 text-right tracking-wider">{Number(lot.available_weight).toLocaleString('en-IN', {maximumFractionDigits: 3})}Kg</td>
               </tr>
             ))}
           </tbody>

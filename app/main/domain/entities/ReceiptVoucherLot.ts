@@ -50,6 +50,15 @@ export class ReceiptVoucherLot {
   @Column({ type: 'text', nullable: true })
   remarks?: string;
 
+  @Column({ type: 'boolean', default: false, nullable: true })
+  claim_raised?: boolean;
+
+  @Column({ type: 'decimal', precision: 12, scale: 3, default: 0, nullable: true })
+  claim_rate?: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 3, default: 0, nullable: true })
+  claim_amount?: number;  
+
   @CreateDateColumn()
   createdAt!: Date;
 

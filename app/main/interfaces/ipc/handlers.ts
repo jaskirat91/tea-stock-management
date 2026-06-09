@@ -203,28 +203,117 @@ export function setupIpcHandlers() {
   });
 
   // Available Stock Query
-  ipcMain.handle('stock:get-available', async (_, excludeIssueId?: string) => {
+  ipcMain.handle('stock:get-available', async (_, excludeIssueId?: string, includeAll?: boolean, filters?: any) => {
     try {
       const repository = AppDataSource.getRepository(ReceiptVoucherLot);
-      return await repository.createQueryBuilder('lot')
+      const query = repository.createQueryBuilder('lot')
         .leftJoinAndSelect('lot.garden', 'garden')
         .leftJoinAndSelect('lot.voucher', 'voucher')
+        .leftJoinAndSelect('voucher.transport', 'transport')
         .leftJoin('issue_vouchers', 'issue', `issue.receipt_voucher_lot_id = lot.id ${ excludeIssueId ? `AND issue.id != '${excludeIssueId}'` : ''}`)
         .select('lot.id', 'id')
         .addSelect('lot.lot_no', 'lot_no')
         .addSelect('lot.grade', 'grade')
         .addSelect('voucher.gr_no', 'gr_no')
+        .addSelect('voucher.gr_date', 'gr_date')
+        .addSelect('transport.name', 'transport_name')
+        .addSelect('transport.id', 'transport_id')
         .addSelect('garden.name', 'garden_name')
         .addSelect('lot.total_bags', 'total_bags')
         .addSelect('lot.net_weight', 'net_weight')
         .addSelect('lot.total_bags - SUM(COALESCE(issue.no_of_bags, 0))', 'available_bags')
         .addSelect('lot.net_weight - SUM(COALESCE(issue.net_weight, 0))', 'available_weight')
         .addSelect('lot.weight_per_bag', 'weight_per_bag')
-        .groupBy('lot.id')
-        .having('available_bags > 0')
-        .getRawMany();
+        .addSelect('lot.claim_raised', 'claim_raised')
+        .addSelect('lot.claim_rate', 'claim_rate')
+        .addSelect('lot.claim_amount', 'claim_amount')
+        .groupBy('lot.id');
+
+        if (filters) {
+          if (filters.garden) {
+            query.andWhere('garden.name = :garden', { garden: filters.garden });
+          }
+          if (filters.grade) {
+            query.andWhere('lot.grade = :grade', { grade: filters.grade });
+          }
+          if (filters.lot_no) {
+            query.andWhere('lot.lot_no LIKE :lot_no', { lot_no: `%${filters.lot_no}%` });
+          }
+          if (filters.gr_no) {
+            query.andWhere('voucher.gr_no LIKE :gr_no', { gr_no: `%${filters.gr_no}%` });
+          }
+          if (filters.transport) {
+            query.andWhere('transport.id = :transport', { transport: filters.transport });
+          }
+          if (filters.gr_date_from) {
+            query.andWhere('voucher.gr_date >= :gr_date_from', { gr_date_from: filters.gr_date_from });
+          }
+          if (filters.gr_date_to) {
+            query.andWhere('voucher.gr_date <= :gr_date_to', { gr_date_to: filters.gr_date_to });
+          }
+          if (filters.claim_status) {
+            if (filters.claim_status === 'yes') {
+              query.andWhere('lot.claim_raised = true');
+            } else if (filters.claim_status === 'no') {
+              query.andWhere('lot.claim_raised = false');
+            }
+          }
+        }
+
+        if (!includeAll) {
+          query.having('available_bags > 0');
+        } else {
+          query.andHaving('available_bags > 0').orHaving('available_weight > 0')
+        }
+        return await query.orderBy('available_bags', 'DESC').addOrderBy('gr_date', 'ASC').getRawMany();
     } catch (error) {
       console.error('Error in stock:get-available:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('claim:report', async (_, {transportId, fromDate, toDate }: any) => {
+    try {
+      const repository = AppDataSource.getRepository(ReceiptVoucherLot);
+      
+      // First, get all lots with claims and their current available weight
+      const lotsWithClaims = repository.createQueryBuilder('lot')
+        .leftJoinAndSelect('lot.voucher', 'voucher')
+        .leftJoinAndSelect('voucher.transport', 'transport')
+        // .leftJoin('issue_vouchers', 'issue', 'issue.receipt_voucher_lot_id = lot.id')
+        .select('voucher.gr_no', 'gr_no')
+        .addSelect('voucher.gr_date', 'gr_date')
+        .addSelect('transport.name', 'transport_name')
+        .addSelect('SUM(lot.total_bags)', 'total_bags_received')
+        .addSelect('SUM(lot.net_weight)', 'net_claim_weight')
+        .addSelect('SUM(lot.claim_amount)', 'total_claim_amount')
+        .addSelect('AVG(lot.claim_rate)', 'avg_claim_rate')
+        .groupBy('voucher.id')
+        .where('lot.claim_raised = true');
+        if(transportId) {
+          lotsWithClaims.andWhere('transport.id = :transportId', { transportId });
+        }
+        
+        if (fromDate) {
+          lotsWithClaims.andWhere('voucher.gr_date >= :fromDate', { fromDate });
+        }
+        if (toDate) {
+          lotsWithClaims.andWhere('voucher.gr_date <= :toDate', { toDate });
+        }
+        
+        return await lotsWithClaims.orderBy('gr_date', 'ASC').getRawMany();
+    } catch (error) {
+      console.error('Error in claim:report:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('receipt-voucher-lot:update-claim', async (_, { id, claim_raised, claim_rate, claim_amount }: any) => {
+    try {
+      const repository = AppDataSource.getRepository(ReceiptVoucherLot);
+      return await repository.update(id, { claim_raised, claim_rate, claim_amount });
+    } catch (error) {
+      console.error('Error in receipt-voucher-lot:update-claim:', error);
       throw error;
     }
   });
