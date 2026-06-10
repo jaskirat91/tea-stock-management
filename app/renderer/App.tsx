@@ -8,6 +8,7 @@ import MasterModule from './modules/masters/MasterModule';
 import ReceiptVoucherModule from './modules/vouchers/ReceiptVoucherModule';
 import IssueVoucherModule from './modules/vouchers/IssueVoucherModule';
 import StockReportModule from './modules/reports/StockReportModule';
+import DashboardModule from './modules/DashboardModule';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { 
   LayoutDashboard, 
@@ -210,20 +211,7 @@ const App: React.FC = () => {
           
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             {currentModule === 'Dashboard' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-sm dark:shadow-none backdrop-blur-sm">
-                  <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Total Stock</h3>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white">1,240 <span className="text-sm font-normal text-slate-400 dark:text-slate-500">Kgs</span></p>
-                </div>
-                <div className="p-6 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-sm dark:shadow-none backdrop-blur-sm">
-                  <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Active Batches</h3>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white">12</p>
-                </div>
-                <div className="p-6 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-sm dark:shadow-none backdrop-blur-sm">
-                  <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Low Stock Alerts</h3>
-                  <p className="text-3xl font-bold text-primary">3</p>
-                </div>
-              </div>
+              <DashboardModule />
             )}
             
             {currentModule === 'Firm Master' && (
