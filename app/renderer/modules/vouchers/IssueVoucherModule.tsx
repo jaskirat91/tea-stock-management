@@ -17,6 +17,7 @@ const IssueVoucherModule: React.FC = () => {
     voucher_no: '',
     firm_id: '',
     party_id: '',
+    lot_no: '',
     challan_no: '',
     garden_id: '',
     grade: ''
@@ -125,6 +126,24 @@ const IssueVoucherModule: React.FC = () => {
           </select>
           <select
             className="w-full px-3 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary transition-all font-medium"
+            value={filters.party_id}
+            onChange={e => setFilters(f => ({ ...f, party_id: e.target.value }))}
+          >
+            <option value="">All Parties</option>
+            {masters.parties.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <div className="relative flex">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <input
+              type="text"
+              placeholder="Lot No"
+              className="w-full pl-9 px-4 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary transition-all"
+              value={filters.lot_no}
+              onChange={e => setFilters(f => ({ ...f, lot_no: e.target.value }))}
+            />
+          </div>
+          <select
+            className="w-full px-3 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary transition-all font-medium"
             value={filters.garden_id}
             onChange={e => setFilters(f => ({ ...f, garden_id: e.target.value }))}
           >
@@ -140,7 +159,7 @@ const IssueVoucherModule: React.FC = () => {
             {masters.grades.map((g: any) => <option key={g.name} value={g.name}>{g.name}</option>)}
           </select>
           <button 
-            onClick={() => setFilters({ voucher_no: '', firm_id: '', party_id: '', challan_no: '', garden_id: '', grade: '' })}
+            onClick={() => setFilters({ voucher_no: '', firm_id: '', party_id: '', lot_no: '', challan_no: '', garden_id: '', grade: '' })}
             className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg text-xs flex items-center justify-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
           >
             <RotateCcw size={14} /> Reset
@@ -161,10 +180,12 @@ const IssueVoucherModule: React.FC = () => {
               <tr className="bg-slate-50/50 dark:bg-white/5 border-b border-black/10 dark:border-white/10">
                 <th className="px-3 py-2 uppercase tracking-wider font-bold">Voucher Details</th>
                 <th className="px-3 py-2 uppercase tracking-wider font-bold">Firm / Party</th>
-                <th className="px-3 py-2 uppercase tracking-wider font-bold">Lot / Challan</th>
                 <th className="px-3 py-2 uppercase tracking-wider font-bold">Garden / Grade</th>
+                <th className="px-3 py-2 uppercase tracking-wider font-bold">Lot / Challan</th>
                 <th className="px-3 py-2 uppercase tracking-wider font-bold text-center">Bags</th>
+                <th className="px-3 py-2 uppercase tracking-wider font-bold text-center">Shortage WT.</th>
                 <th className="px-3 py-2 uppercase tracking-wider font-bold text-right">Net Weight</th>
+                <th className="px-3 py-2 uppercase tracking-wider font-bold text-right">Bill Issued</th>
                 <th className="px-3 py-2 uppercase tracking-wider font-bold text-right">Actions</th>
               </tr>
             </thead>
@@ -191,12 +212,6 @@ const IssueVoucherModule: React.FC = () => {
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex flex-col">
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Lot: {v.lot?.lot_no || '-'}</span>
-                        <span className="text-xs text-slate-500 mt-1">Challan: {v.challan_no}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-col">
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
                           <Leaf size={12} className="inline mr-1 text-slate-400" /> {v.lot?.garden?.name || '-'}
                         </span>
@@ -205,13 +220,27 @@ const IssueVoucherModule: React.FC = () => {
                         </span>
                       </div>
                     </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Lot: {v.lot?.lot_no || '-'}</span>
+                        <span className="text-xs text-slate-500 mt-1">Challan: {v.challan_no}</span>
+                      </div>
+                    </td>
                     <td className="px-3 py-2 text-center">
                       <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-bold text-xs">
                         {v.no_of_bags}
                       </span>
                     </td>
+                    <td className="px-3 py-2 text-center">
+                      <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 font-bold text-xs">
+                        {v.shortage_weight}
+                      </span>
+                    </td>
                     <td className="px-3 py-2 text-right font-mono font-bold text-slate-700 dark:text-slate-300">
                       {Number(v.net_weight).toFixed(3)} Kg
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {v.remarks}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-2">

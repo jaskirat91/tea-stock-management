@@ -42,7 +42,7 @@ interface NavMenu {
 
 const navConfig: NavMenu[] = [
   { name: 'Dashboard', icon: LayoutDashboard, mnemonic: 'D', route: 'Dashboard' },
-  { name: 'Inventory', icon: Box, mnemonic: 'I', route: 'Inventory' },
+  // { name: 'Inventory', icon: Box, mnemonic: 'I', route: 'Inventory' },
   { 
     name: 'Masters', 
     icon: Users, 
@@ -61,18 +61,18 @@ const navConfig: NavMenu[] = [
     mnemonic: 'V',
     items: [
       { name: 'Receipt Voucher', icon: Receipt, mnemonic: 'R', route: 'Receipt Voucher' },
-      { name: 'Issue Voucher', icon: ClipboardList, mnemonic: 'U', route: 'Issue Voucher' },
+      { name: 'Issue Voucher', icon: ClipboardList, mnemonic: 'I', route: 'Issue Voucher' },
     ]
   },
   {
     name: 'Reports',
     icon: FileText,
-    mnemonic: 'O',
+    mnemonic: 'R',
     items: [
       { name: 'Stock Report', icon: Box, mnemonic: 'S', route: 'Stock Report' },
     ]
   },
-  { name: 'Settings', icon: Settings, mnemonic: 'S', route: 'Settings' },
+  // { name: 'Settings', icon: Settings, mnemonic: 'S', route: 'Settings' },
 ];
 
 const App: React.FC = () => {
@@ -150,8 +150,9 @@ const App: React.FC = () => {
       {/* Top Bar / Module Switcher */}
       <header className="h-12 flex items-center justify-between px-4 border-b border-black/10 dark:border-white/10 bg-white/80 dark:bg-black/20 backdrop-blur-md drag relative z-50">
         <div className="flex items-center gap-6 no-drag" ref={navRef}>
-          <div className="text-primary font-bold tracking-tight text-lg mr-4">
-            TEA STOCK
+          <div className="text-primary font-bold tracking-tight text-lg mr-4 flex items-center gap-2">
+            <Leaf size={16} />
+            <span>TEA STOCK MANAGEMENT</span>
           </div>
           <nav className="flex items-center gap-1">
             {navConfig.map((menu) => (

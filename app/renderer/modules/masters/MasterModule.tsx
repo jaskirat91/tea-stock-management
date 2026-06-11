@@ -33,7 +33,7 @@ const MasterModule: React.FC<MasterModuleProps> = ({ entityName, title, fields, 
 
   const fetchData = async () => {
     try {
-      const result = await invoke(`${entityName}:get-all`);
+      const result = await invoke(`${entityName}:get-all`, { includeInactive: true });
       setData(result);
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -44,15 +44,25 @@ const MasterModule: React.FC<MasterModuleProps> = ({ entityName, title, fields, 
     fetchData();
   }, [entityName]);
 
+  const handleClose = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    reset({});
+  };
+
   useHotkeys({
     'Cmd+N': () => handleAdd(),
     'Cmd+F': () => document.getElementById('master-search')?.focus(),
-    'Esc': () => setIsModalOpen(false),
+    'Esc': () => handleClose(),
   });
 
   const handleAdd = () => {
     setEditingId(null);
-    reset();
+    const defaultValues = fields.reduce((acc, field) => ({
+      ...acc,
+      [field.name]: field.type === 'boolean' ? 'true' : ''
+    }), {});
+    reset(defaultValues);
     setIsModalOpen(true);
   };
 
@@ -80,10 +90,15 @@ const MasterModule: React.FC<MasterModuleProps> = ({ entityName, title, fields, 
   const onSubmit = async (formData: any) => {
     try {
       await invoke(`${entityName}:save`, { ...formData, id: editingId });
-      setIsModalOpen(false);
+      handleClose();
       fetchData();
     } catch (err) {
-      alert('Failed to save: ' + err);
+      if (err?.toString()?.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed')) {
+        alert(`A ${title.toLowerCase()} with the same name already exists!`);
+      }
+      else {
+        alert('Failed to save: ' + err);
+      }
     }
   };
 
@@ -186,7 +201,7 @@ const MasterModule: React.FC<MasterModuleProps> = ({ entityName, title, fields, 
       {/* Entry Modal */}
       <Modal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={handleClose} 
         title={editingId ? `Edit ${title}` : `New ${title}`}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -219,7 +234,7 @@ const MasterModule: React.FC<MasterModuleProps> = ({ entityName, title, fields, 
           <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-black/10 dark:border-white/10">
             <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
+              onClick={handleClose}
               className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               Cancel

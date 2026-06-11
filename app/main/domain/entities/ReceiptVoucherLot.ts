@@ -5,10 +5,12 @@ import {
   CreateDateColumn, 
   UpdateDateColumn, 
   ManyToOne, 
+  OneToMany, 
   JoinColumn 
 } from 'typeorm';
 import { ReceiptVoucher } from './ReceiptVoucher';
 import { Garden } from './Garden';
+import { IssueVoucher } from './IssueVoucher';
 
 @Entity('receipt_voucher_lots')
 export class ReceiptVoucherLot {
@@ -58,6 +60,9 @@ export class ReceiptVoucherLot {
 
   @Column({ type: 'decimal', precision: 12, scale: 3, default: 0, nullable: true })
   claim_amount?: number;  
+
+  @OneToMany(() => IssueVoucher, (issue) => issue.lot)
+  issues!: IssueVoucher[];
 
   @CreateDateColumn()
   createdAt!: Date;

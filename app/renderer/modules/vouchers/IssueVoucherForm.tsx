@@ -204,12 +204,13 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
         {selectedGarden ? (
         <table className="border w-full text-xs">
           <thead>
-            <tr><th className="border text-left py-2 px-1">Grade</th><th className="border text-right py-2 px-1">Avail. Bags</th><th className="border text-right py-2 px-1">Avail. WT.</th></tr>
+            <tr><th className="border text-left py-2 px-1">Grade</th><th className="border text-left py-2 px-1">Lot</th><th className="border text-right py-2 px-1">Avail. Bags</th><th className="border text-right py-2 px-1">Avail. WT.</th></tr>
           </thead>
           <tbody className="divide-y divide-black/5">
             {filteredStock.map((lot: any) => (
               <tr key={lot.id}>
                 <td className="border py-2 px-1">{lot.grade}</td>
+                <td className="border py-2 px-1">{lot.lot_no}</td>
                 <td className="border text-right py-2 px-1">{lot.available_bags}</td>
                 <td className="border py-2 px-1 text-right tracking-wider">{Number(lot.available_weight).toLocaleString('en-IN', {maximumFractionDigits: 3})}Kg</td>
               </tr>

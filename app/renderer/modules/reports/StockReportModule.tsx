@@ -100,6 +100,7 @@ const StockReportModule: React.FC = () => {
 
     try {
       const reportData = await invoke('claim:report', claimFilters);
+      console.log("Claim Data", reportData);
       const firm = masters.firms.find((f: any) => f.id === claimFilters.firmId) as any;
       const transport = masters.transports.find((t: any) => t.id === claimFilters.transportId) as any;
       
@@ -153,14 +154,14 @@ const StockReportModule: React.FC = () => {
           ...reportData.map((row: any) => [
             row.gr_no,
             new Date(row.gr_date).toLocaleDateString('en-IN'),
-              Number(row.net_claim_weight).toLocaleString('en-IN', { maximumFractionDigits: 3 }),
-              Number(row.avg_claim_rate).toLocaleString('en-IN', { maximumFractionDigits: 2 }),
+              Number(row.available_weight).toLocaleString('en-IN', { maximumFractionDigits: 3 }),
+              Number(row.avg_claim_rate).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
               Number(row.total_claim_amount).toLocaleString('en-IN', { maximumFractionDigits: 2 }),
               row.total_bags_received
           ]),
           [
             { content: 'TOTAL', colSpan: 2, styles: { fontStyle: 'bold', halign: 'right' } },
-              { content: Number(reportData.reduce((sum: number, r: any) => sum + r.net_claim_weight, 0)).toLocaleString('en-IN', { maximumFractionDigits: 3 }), styles: { fontStyle: 'bold', halign: 'right' } },
+              { content: Number(reportData.reduce((sum: number, r: any) => sum + r.available_weight, 0)).toLocaleString('en-IN', { maximumFractionDigits: 3 }), styles: { fontStyle: 'bold', halign: 'right' } },
             '',
               { content: Number(reportData.reduce((sum: number, r: any) => sum + r.total_claim_amount, 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 }), styles: { fontStyle: 'bold', halign: 'right' } },
               // { content: byTransporter[transportName].reduce((sum: number, r: any) => sum + r.total_bags, 0).toString(), styles: { fontStyle: 'bold', halign: 'center' } }
@@ -339,6 +340,7 @@ const StockReportModule: React.FC = () => {
             <thead>
                 <tr className="bg-slate-50/50 dark:bg-white/5 border-b border-black/10 dark:border-white/10">
                     <th className="px-4 py-3">GR Date</th>
+                    <th className="px-4 py-3">Rec. Date</th>
                     <th className="px-4 py-3">Garden</th>
                     <th className="px-4 py-3">Grade</th>
                     <th className="px-4 py-3">Lot No</th>
@@ -355,6 +357,7 @@ const StockReportModule: React.FC = () => {
                 {filteredData.map((item, idx) => (
                     <tr key={idx} className={`hover:bg-black/[0.1] dark:hover:bg-white/[0.1] transition-colors ${item.claim_raised ? 'bg-blue-500/30 dark:bg-slate-600/50' : ''}`}>
                         <td className="px-4 py-3 whitespace-nowrap">{item.gr_date ? new Date(item.gr_date).toLocaleDateString('en-IN') : '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{item.receipt_date ? new Date(item.receipt_date).toLocaleDateString('en-IN') : '-'}</td>
                         <td className="px-4 py-3">{item.garden_name}</td>
                         <td className="px-4 py-3">{item.grade}</td>
                         <td className="px-4 py-3">{item.lot_no}</td>

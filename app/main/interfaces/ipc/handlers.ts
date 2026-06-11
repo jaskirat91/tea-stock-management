@@ -13,10 +13,17 @@ import { Between, Like } from 'typeorm';
 
 export function setupIpcHandlers() {
   const handleCrud = (entity: any, name: string) => {
-    ipcMain.handle(`${name}:get-all`, async () => {
+    ipcMain.handle(`${name}:get-all`, async (_, filters: any = {}) => {
       try {
         const repository = AppDataSource.getRepository(entity);
-        return await repository.find({ order: { name: 'ASC' } as any });
+        const where: any = {};
+        if (filters.includeInactive !== true) {
+          where.is_active = true;
+        }
+        return await repository.find({ 
+          where,
+          order: { name: 'ASC' } as any 
+        });
       } catch (error) {
         console.error(`Error in ${name}:get-all:`, error);
         throw error;
@@ -67,6 +74,21 @@ export function setupIpcHandlers() {
       return await repository.findOne({ where: { id }, relations: ['garden'] });
     } catch (error) {
       console.error('Error in receipt-voucher-lot:get-one:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('receipt-voucher-lot:get-unique-lots', async (_, gardenId: string) => {
+    try {
+      const repository = AppDataSource.getRepository(ReceiptVoucherLot);
+      const lots = await repository.createQueryBuilder('lot')
+        .select('DISTINCT lot.lot_no', 'lot_no')
+        .where('lot.garden_id = :gardenId', { gardenId })
+        .orderBy('lot.lot_no', 'ASC')
+        .getRawMany();
+      return lots.map(l => l.lot_no);
+    } catch (error) {
+      console.error('Error in receipt-voucher-lot:get-unique-lots:', error);
       throw error;
     }
   });
@@ -130,14 +152,16 @@ export function setupIpcHandlers() {
       const where: any = {};
       if (filters.voucher_no) where.voucher_no = Like(`%${filters.voucher_no}%`);
       if (filters.firm_id) where.firm_id = filters.firm_id;
+      if (filters.party_id) where.party_id = filters.party_id;
       if (filters.challan_no) where.challan_no = Like(`%${filters.challan_no}%`);
       if (filters.issue_date_from) where.issue_date = Between(filters.issue_date_from, filters.issue_date_to || filters.issue_date_from);
-      
+
       // Filter by Lot details
-      if (filters.garden_id || filters.grade) {
+      if (filters.garden_id || filters.grade || filters.lot_no) {
           where.lot = {};
           if (filters.garden_id) where.lot.garden_id = filters.garden_id;
           if (filters.grade) where.lot.grade = filters.grade;
+          if (filters.lot_no) where.lot.lot_no = Like(`%${filters.lot_no}%`);
       }
       
       const [items, total] = await repository.findAndCount({
@@ -230,6 +254,7 @@ export function setupIpcHandlers() {
         .addSelect('lot.grade', 'grade')
         .addSelect('voucher.gr_no', 'gr_no')
         .addSelect('voucher.gr_date', 'gr_date')
+        .addSelect('voucher.receipt_date', 'receipt_date')
         .addSelect('transport.name', 'transport_name')
         .addSelect('transport.id', 'transport_id')
         .addSelect('garden.name', 'garden_name')
@@ -376,34 +401,52 @@ export function setupIpcHandlers() {
 
   ipcMain.handle('claim:report', async (_, {transportId, fromDate, toDate }: any) => {
     try {
-      const repository = AppDataSource.getRepository(ReceiptVoucherLot);
-      
-      // First, get all lots with claims and their current available weight
-      const lotsWithClaims = repository.createQueryBuilder('lot')
-        .leftJoinAndSelect('lot.voucher', 'voucher')
-        .leftJoinAndSelect('voucher.transport', 'transport')
-        // .leftJoin('issue_vouchers', 'issue', 'issue.receipt_voucher_lot_id = lot.id')
-        .select('voucher.gr_no', 'gr_no')
+      const issueSubQuery = AppDataSource.getRepository(IssueVoucher)
+        .createQueryBuilder('issue')
+        .select('issue.receipt_voucher_lot_id', 'lot_id')
+        .addSelect('SUM(issue.no_of_bags)', 'issued_bags')
+        .addSelect('SUM(issue.net_weight)', 'issued_weight')
+        .groupBy('issue.receipt_voucher_lot_id');
+
+      const repository = AppDataSource.getRepository(ReceiptVoucherLot); 
+      const mainQuery = repository.createQueryBuilder('lot')
+        .leftJoin('lot.voucher', 'voucher')
+        .leftJoin('voucher.transport', 'transport')
+        .leftJoin('(' + issueSubQuery.getQuery() + ')', 'issues', 'issues.lot_id = lot.id')        
+        .addSelect('voucher.gr_no', 'gr_no')
         .addSelect('voucher.gr_date', 'gr_date')
+        .addSelect('voucher.total_bags', 'total_bags_received')
         .addSelect('transport.name', 'transport_name')
-        .addSelect('SUM(lot.total_bags)', 'total_bags_received')
-        .addSelect('SUM(lot.net_weight)', 'net_claim_weight')
+        .addSelect('transport.id', 'transport_id')
+        .addSelect('SUM(lot.net_weight) - SUM(issues.issued_weight)', 'available_weight')
         .addSelect('SUM(lot.claim_amount)', 'total_claim_amount')
-        .addSelect('AVG(lot.claim_rate)', 'avg_claim_rate')
-        .groupBy('voucher.id')
-        .where('lot.claim_raised = true');
+        .addSelect('ROUND(ROUND(SUM(lot.claim_amount), 2) / ROUND((SUM(lot.net_weight) - SUM(issues.issued_weight)), 2), 2)', 'avg_claim_rate')
+        .setParameters(issueSubQuery.getParameters())
+        .where('lot.claim_raised = true')
+        .groupBy('voucher.id');
+
         if(transportId) {
-          lotsWithClaims.andWhere('transport.id = :transportId', { transportId });
+          mainQuery.andWhere('transport.id = :transportId', { transportId });
         }
         
         if (fromDate) {
-          lotsWithClaims.andWhere('voucher.gr_date >= :fromDate', { fromDate });
+          mainQuery.andWhere('voucher.gr_date >= :fromDate', { fromDate });
         }
         if (toDate) {
-          lotsWithClaims.andWhere('voucher.gr_date <= :toDate', { toDate });
+          mainQuery.andWhere('voucher.gr_date <= :toDate', { toDate });
         }
         
-        return await lotsWithClaims.orderBy('gr_date', 'ASC').getRawMany();
+        mainQuery.orderBy('voucher.gr_date', 'ASC');
+
+        console.log("Main Query", mainQuery.getQuery());
+
+        const results = await AppDataSource.createQueryBuilder()
+        .select('gr_no, gr_date, total_bags_received, transport_name, available_weight, total_claim_amount, avg_claim_rate')
+        .from('(' + mainQuery.getQuery() + ')', 'calculated')
+        .setParameters(mainQuery.getParameters())
+        .getRawMany();
+
+        return results;
     } catch (error) {
       console.error('Error in claim:report:', error);
       throw error;
@@ -463,27 +506,69 @@ export function setupIpcHandlers() {
   ipcMain.handle('receipt-voucher:get-paginated', async (_, { page = 1, limit = 20, filters = {} }: any) => {
     try {
       const repository = AppDataSource.getRepository(ReceiptVoucher);
-      const where: any = {};
-      if (filters.voucher_no) where.voucher_no = Like(`%${filters.voucher_no}%`);
-      if (filters.firm_id) where.firm_id = filters.firm_id;
-      if (filters.party_id) where.party_id = filters.party_id;
-      if (filters.bill_no) where.bill_no = Like(`%${filters.bill_no}%`);
-      if (filters.bill_date) where.bill_date = filters.bill_date;
-      if (filters.gr_no) where.gr_no = Like(`%${filters.gr_no}%`);
-      if (filters.transport_id) where.transport_id = filters.transport_id;
-      if (filters.receipt_no) where.receipt_no = Like(`%${filters.receipt_no}%`);
+      const query = repository.createQueryBuilder('v')
+        .leftJoinAndSelect('v.firm', 'firm')
+        .leftJoinAndSelect('v.party', 'party')
+        .leftJoinAndSelect('v.transport', 'transport')
+        .leftJoinAndSelect('v.lots', 'lots')
+        .leftJoinAndSelect('lots.garden', 'garden');
 
-      const [items, total] = await repository.findAndCount({
-        where,
-        relations: ['firm', 'party', 'transport', 'lots', 'lots.garden'],
-        order: { createdAt: 'DESC' },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+      if (filters.voucher_no) query.andWhere('v.voucher_no LIKE :voucher_no', { voucher_no: `%${filters.voucher_no}%` });
+      if (filters.firm_id) query.andWhere('v.firm_id = :firm_id', { firm_id: filters.firm_id });
+      if (filters.party_id) query.andWhere('v.party_id = :party_id', { party_id: filters.party_id });
+      if (filters.bill_no) query.andWhere('v.bill_no LIKE :bill_no', { bill_no: `%${filters.bill_no}%` });
+      if (filters.bill_date) query.andWhere('v.bill_date = :bill_date', { bill_date: filters.bill_date });
+      if (filters.gr_no) query.andWhere('v.gr_no LIKE :gr_no', { gr_no: `%${filters.gr_no}%` });
+      if (filters.transport_id) query.andWhere('v.transport_id = :transport_id', { transport_id: filters.transport_id });
+      if (filters.receipt_no) query.andWhere('v.receipt_no LIKE :receipt_no', { receipt_no: `%${filters.receipt_no}%` });
+
+      if (filters.garden_id) {
+        query.andWhere(qb => {
+          const subQuery = qb.subQuery()
+            .select('1')
+            .from(ReceiptVoucherLot, 'l')
+            .where('l.voucher_id = v.id')
+            .andWhere('l.garden_id = :garden_id', { garden_id: filters.garden_id })
+            .getQuery();
+          return 'EXISTS ' + subQuery;
+        });
+      }
+
+      if (filters.lot_no) {
+        query.andWhere(qb => {
+          const subQuery = qb.subQuery()
+            .select('1')
+            .from(ReceiptVoucherLot, 'l')
+            .where('l.voucher_id = v.id')
+            .andWhere('l.lot_no LIKE :lot_no', { lot_no: `%${filters.lot_no}%` })
+            .getQuery();
+          return 'EXISTS ' + subQuery;
+        });
+      }
+
+      const total = await query.getCount();
+      const items = await query
+        .orderBy('v.createdAt', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getMany();
 
       return { items, total, page, totalPages: Math.ceil(total / limit) };
     } catch (error) {
       console.error('Error in receipt-voucher:get-paginated:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('receipt-voucher:get-details', async (_, id: string) => {
+    try {
+      const repository = AppDataSource.getRepository(ReceiptVoucher);
+      return await repository.findOne({
+        where: { id },
+        relations: ['firm', 'party', 'transport', 'lots', 'lots.garden', 'lots.issues', 'lots.issues.firm', 'lots.issues.party']
+      });
+    } catch (error) {
+      console.error('Error in receipt-voucher:get-details:', error);
       throw error;
     }
   });

@@ -5,7 +5,7 @@ export class Transport {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ unique: true })
   name!: string;
 
   @Column({ default: true })
