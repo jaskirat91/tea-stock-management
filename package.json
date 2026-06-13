@@ -61,8 +61,10 @@
     "eslint": "^8.57.1",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.26",
+    "png2icons": "^2.0.1",
     "postcss": "^8.4.33",
     "prettier": "^3.8.2",
+    "sharp": "^0.35.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
     "vite": "^5.0.11",
@@ -71,25 +73,26 @@
   "build": {
     "appId": "com.teastock.app",
     "productName": "Tea Stock Management",
-    "icon": "build/icon.png",
+    "icon": "assets/icons/png/512x512.png",
     "directories": {
       "output": "release"
     },
     "compression": "normal",
     "files": [
       "dist/**/*",
+      "assets/icons/**/*",
       "package.json"
     ],
     "mac": {
       "target": "dmg",
-      "icon": "build/icon.icns",
+      "icon": "assets/icons/icon.icns",
       "category": "public.app-category.business"
     },
     "win": {
       "target": [
         "nsis"
       ],
-      "icon": "build/icon.ico"
+      "icon": "assets/icons/icon.ico"
     },
     "linux": {
       "target": [
@@ -97,7 +100,7 @@
         "deb"
       ],
       "category": "Office",
-      "icon": "build/icons"
+      "icon": "assets/icons/png"
     },
     "nsis": {
       "oneClick": false,

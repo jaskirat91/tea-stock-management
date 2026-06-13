@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { app, BrowserWindow, ipcMain, nativeImage } from 'electron';
+import { app, BrowserWindow, nativeImage } from 'electron';
 import * as path from 'path';
 import { AppDataSource } from './infrastructure/database/dataSource';
 import { setupIpcHandlers } from './interfaces/ipc/handlers';
@@ -7,6 +7,7 @@ import { setupIpcHandlers } from './interfaces/ipc/handlers';
 const isDev = !app.isPackaged;
 
 let mainWindow: BrowserWindow | null = null;
+let ipcHandlersRegistered = false;
 
 async function bootstrap() {
   try {
@@ -39,14 +40,26 @@ async function bootstrap() {
       console.log('Database initialized successfully');
     }
 
-    // 2. Setup IPC Handlers (Register only once)
-    setupIpcHandlers();
+    // 2. Setup IPC Handlers — guard against duplicate registration on macOS
+    // 'activate' can re-trigger bootstrap(); registering handlers twice crashes.
+    if (!ipcHandlersRegistered) {
+      setupIpcHandlers();
+      ipcHandlersRegistered = true;
+    }
 
     // 3. Resolve the app icon
-    const iconPath = isDev
-      ? path.join(__dirname, '../../../../build/icon.png')
-      : path.join(process.resourcesPath, 'build/icon.png');
-    const appIcon = nativeImage.createFromPath(iconPath);
+    // Always use the 512x512 PNG for nativeImage — most reliable on all platforms.
+    // On macOS, BrowserWindow.icon alone does NOT update the Dock icon in dev mode;
+    // app.dock.setIcon() must be called explicitly.
+    const iconPngPath = isDev
+      ? path.join(__dirname, '../../../../assets/icons/png/512x512.png')
+      : path.join(process.resourcesPath, 'app/assets/icons/png/512x512.png');
+    const appIcon = nativeImage.createFromPath(iconPngPath);
+
+    // Set macOS Dock icon explicitly (required in dev mode)
+    if (process.platform === 'darwin' && app.dock) {
+      app.dock.setIcon(appIcon);
+    }
 
     // 4. Create the browser window
     mainWindow = new BrowserWindow({
