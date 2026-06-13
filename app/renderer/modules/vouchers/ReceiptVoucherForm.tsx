@@ -5,12 +5,57 @@ import { SearchableSelect } from '../../components/SearchableSelect';
 import { Plus, Trash2, Save, X, Calculator, ArrowLeft, ArrowUp, ArrowDown } from 'lucide-react';
 import { KbdBadge } from '../../components/KbdBadge';
 import { useConfirmationStore } from '../../store/confirmationStore';
+import { QuickCreateMasterModal } from '../masters/QuickCreateMasterModal';
 
 interface ReceiptVoucherFormProps {
   onClose: () => void;
   onSaved: () => void;
   initialData?: any;
 }
+
+const MASTER_CONFIGS: Record<string, any> = {
+  firm: {
+    entityName: 'firm',
+    title: 'Firm',
+    fields: [
+      { name: 'name', label: 'Firm Name', required: true },
+      { name: 'code', label: 'Firm Code', required: true },
+      { name: 'gstin', label: 'GSTIN' },
+      { name: 'phone', label: 'Phone Number' },
+      { name: 'address', label: 'Address' },
+    ]
+  },
+  garden: {
+    entityName: 'garden',
+    title: 'Garden',
+    fields: [
+      { name: 'name', label: 'Garden Name', required: true },
+    ]
+  },
+  party: {
+    entityName: 'party',
+    title: 'Party',
+    fields: [
+      { name: 'name', label: 'Party Name', required: true },
+      { name: 'gstin', label: 'GSTIN' },
+      { name: 'address', label: 'Address' },
+    ]
+  },
+  grade: {
+    entityName: 'grade',
+    title: 'Grade',
+    fields: [
+      { name: 'name', label: 'Grade Name', required: true },
+    ]
+  },
+  transport: {
+    entityName: 'transport',
+    title: 'Transport',
+    fields: [
+      { name: 'name', label: 'Transport Name', required: true },
+    ]
+  }
+};
 
 const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSaved, initialData }) => {
   const { invoke, loading } = useIpc();
@@ -42,6 +87,17 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
     transports: [],
     gardens: [],
     grades: []
+  });
+
+  const [quickCreate, setQuickCreate] = useState<{
+    isOpen: boolean;
+    type: string;
+    inputId: string;
+    callback?: (newItem: any) => void;
+  }>({
+    isOpen: false,
+    type: 'firm',
+    inputId: ''
   });
 
   // Navigation order for header
@@ -105,6 +161,39 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
     } catch (err) {
       console.error('Failed to generate voucher no:', err);
     }
+  };
+
+  const handleQuickCreateSuccess = (newItem: any) => {
+    const type = quickCreate.type;
+    const masterKey = type === 'party' ? 'parties' : type === 'firm' ? 'firms' : `${type}s`;
+    
+    setMasters(prev => ({
+      ...prev,
+      [masterKey]: [...(prev as any)[masterKey], newItem]
+    }));
+
+    if (quickCreate.callback) {
+      quickCreate.callback(newItem);
+    }
+
+    setQuickCreate({ isOpen: false, type: quickCreate.type, inputId: quickCreate.inputId });
+    
+    document.getElementById(quickCreate.inputId)?.focus();
+     
+  };
+
+  const openQuickCreate = (type: string, inputId: string, callback: (newItem: any) => void) => {
+    setQuickCreate({
+      isOpen: true,
+      type,
+      inputId,
+      callback
+    });
+  };
+
+  const handleCloseQuickCreate = () => {
+    setQuickCreate({ isOpen: false, type: quickCreate.type, inputId: quickCreate.inputId });
+    document.getElementById(quickCreate.inputId)?.focus();
   };
 
   const addLot = () => {
@@ -321,6 +410,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
                 value={formData.firm_id} 
                 onChange={handleFirmChange} 
                 onSelect={() => moveFocus('firm_id', 'next')}
+                onAddNew={() => openQuickCreate('firm', 'firm_id', (item) => handleFirmChange(item.id))}
                 placeholder="Select Firm" 
                 masterRoute="Firm Master"
                 required
@@ -335,6 +425,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
                 value={formData.party_id} 
                 onChange={id => setFormData(p => ({ ...p, party_id: id }))} 
                 onSelect={() => moveFocus('party_id', 'next')}
+                onAddNew={() => openQuickCreate('party', 'party_id', (item) => setFormData(p => ({ ...p, party_id: item.id })))}
                 placeholder="Select Party" 
                 masterRoute="Party Master"
                 required
@@ -368,6 +459,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
                 value={formData.transport_id} 
                 onChange={id => setFormData(p => ({ ...p, transport_id: id }))} 
                 onSelect={() => moveFocus('transport_id', 'next')}
+                onAddNew={() => openQuickCreate('transport', 'transport_id', (item) => setFormData(p => ({ ...p, transport_id: item.id })))}
                 placeholder="Select Transport" 
                 masterRoute="Transport Master"
               />
@@ -440,7 +532,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
               </button>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto min-h-[35vh]">
               <table className="w-full text-sm text-left border-collapse">
                 <thead className="text-[10px] uppercase tracking-widest font-bold text-slate-500">
                   <tr>
@@ -480,6 +572,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
                           value={lot.garden_id} 
                           onChange={id => handleLotChange(idx, 'garden_id', id)} 
                           onSelect={() => moveFocus(`lot-${idx}-garden_id`, 'next')}
+                          onAddNew={() => openQuickCreate('garden', `lot-${idx}-garden_id`, (item) => handleLotChange(idx, `lot-${idx}-garden_id`, item.id))}
                           placeholder="Garden" 
                           masterRoute="Garden Master"
                         />
@@ -491,6 +584,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
                           value={lot.grade} 
                           onChange={name => handleLotChange(idx, 'grade', name)} 
                           onSelect={() => moveFocus(`lot-${idx}-grade`, 'next')}
+                          onAddNew={() => openQuickCreate('grade', `lot-${idx}-grade`, (item) => handleLotChange(idx, `lot-${idx}-grade`, item.id))}
                           placeholder="Grade" 
                           masterRoute="Grade Master"
                         />
@@ -576,6 +670,16 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
             </div>
           </div>
         </form>
+        {quickCreate.isOpen && (
+          <QuickCreateMasterModal
+            isOpen={quickCreate.isOpen}
+            onClose={handleCloseQuickCreate}
+            onSuccess={handleQuickCreateSuccess}
+            entityName={quickCreate.type}
+            title={quickCreate.type}
+            fields={MASTER_CONFIGS[quickCreate.type].fields}
+          />
+        )}
       </div>
 
       <div className="flex items-center gap-6 text-[10px] text-slate-500 font-bold uppercase tracking-widest px-2">
@@ -588,7 +692,7 @@ const ReceiptVoucherForm: React.FC<ReceiptVoucherFormProps> = ({ onClose, onSave
         <div className="flex items-center gap-2"><KbdBadge keys="⌘S" /> Save Voucher</div>
         <div className="flex items-center gap-2"><KbdBadge keys="⌘B" /> Back</div>
       </div>
-    </div>
+    </div>    
   );
 };
 

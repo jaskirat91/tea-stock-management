@@ -14,8 +14,9 @@ interface SearchableSelectProps {
   value: string;
   onChange: (id: string) => void;
   onSelect?: () => void; // Triggered after an item is selected
+  onAddNew?: () => void; // Triggered on F3, if provided replaces navigation
   placeholder: string;
-  masterRoute: string; // The route to navigate to on F2
+  masterRoute: string; // The route to navigate to on F3
   label?: string;
   required?: boolean;
   className?: string;
@@ -27,6 +28,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   value,
   onChange,
   onSelect,
+  onAddNew,
   placeholder,
   masterRoute,
   label,
@@ -58,9 +60,13 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'F2') {
+    if (e.key === 'F3') {
       e.preventDefault();
-      setModule(masterRoute);
+      if (onAddNew) {
+        onAddNew();
+      } else {
+        setModule(masterRoute);
+      }
       return;
     }
 
@@ -128,7 +134,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
               ref={inputRef}
               type="text"
               className="w-full bg-transparent outline-none text-sm text-slate-900 dark:text-white"
-              placeholder="Type to search... (F2 for new)"
+              placeholder="Type to search... (F3 for new)"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -161,7 +167,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
               ))
             ) : (
               <div className="px-4 py-8 text-center text-xs text-slate-400 italic">
-                No results found. Press F2 to add.
+                No results found. Press F3 to add.
               </div>
             )}
           </div>

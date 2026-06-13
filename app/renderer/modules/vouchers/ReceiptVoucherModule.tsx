@@ -109,7 +109,42 @@ const ReceiptVoucherModule: React.FC = () => {
   };
 
   const handleEdit = (voucher: any) => {
-    setEditingVoucher(voucher);
+    const voucherData = {
+      id: voucher.id,
+      voucher_no: voucher.voucher_no,
+      firm_id: voucher.firm_id,
+      party_id: voucher.party_id,
+      bill_no: voucher.bill_no,
+      bill_date: voucher.bill_date,
+      transport_id: voucher.transport_id,
+      frieght_amount: voucher.frieght_amount,
+      gr_no: voucher.gr_no,
+      gr_date: voucher.gr_date,
+      receipt_no: voucher.receipt_no,
+      receipt_date: voucher.receipt_date,
+      total_bags: voucher.total_bags,
+      total_weight: voucher.total_weight,
+      createdAt: voucher.createdAt,
+      updatedAt: voucher.updatedAt,
+      lots: voucher.lots.map((lot: any) => ({
+        id: lot.id,
+        voucher_id: lot.voucher_id,
+        lot_no: lot.lot_no,
+        garden_id: lot.garden_id,
+        grade: lot.grade,
+        total_bags: lot.total_bags,
+        weight_per_bag: lot.weight_per_bag,
+        shortage_weight: lot.shortage_weight,
+        net_weight: lot.net_weight,
+        remarks: lot.remarks,
+        claim_raised: lot.claim_raised,
+        claim_rate: lot.claim_rate,
+        claim_amount: lot.claim_amount,
+        createdAt: lot.createdAt,
+        updatedAt: lot.updatedAt        
+      })),
+    }
+    setEditingVoucher(voucherData);
     setViewMode('form');
   };
 
