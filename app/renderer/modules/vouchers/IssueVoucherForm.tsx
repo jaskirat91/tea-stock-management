@@ -98,15 +98,15 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
         return;
     }
 
-    if (formData.no_of_bags > selectedLot.available_bags) {
-        alert(`Bags exceed available stock (${selectedLot.available_bags} available).`);
-        return;
-    }
+    // if (formData.no_of_bags > selectedLot.available_bags) {
+    //     alert(`Bags exceed available stock (${selectedLot.available_bags} available).`);
+    //     return;
+    // }
 
-    if (formData.net_weight > selectedLot.available_weight + 0.001) { // Adding small tolerance for float comparison
-        alert(`Net weight exceeds available stock (${Number(selectedLot.available_weight).toFixed(3)} Kg available).`);
-        return;
-    }
+    // if (formData.net_weight > selectedLot.available_weight + 0.001) { // Adding small tolerance for float comparison
+    //     alert(`Net weight exceeds available stock (${Number(selectedLot.available_weight).toFixed(3)} Kg available).`);
+    //     return;
+    // }
 
     if (!formData.firm_id || formData.no_of_bags <= 0 || !formData.receipt_voucher_lot_id) {
       alert('Please fill in required fields (Firm, Lot, Bags).');

@@ -200,14 +200,14 @@ export function setupIpcHandlers() {
       const issuedBags = existingIssues.reduce((sum, i) => sum + i.no_of_bags, 0);
       const issuedWeight = existingIssues.reduce((sum, i) => sum + Number(i.net_weight), 0);
 
-      if (Number(data.no_of_bags) + issuedBags > lot.total_bags) {
-        throw new Error('Not enough bags available in the selected lot.');
-      }
+      // if (Number(data.no_of_bags) + issuedBags > lot.total_bags) {
+      //   throw new Error('Not enough bags available in the selected lot.');
+      // }
       
       // Allow small tolerance for floating point comparison
-      if (Number(data.net_weight) + issuedWeight > Number(lot.net_weight) + 0.001) {
-        throw new Error('Not enough weight available in the selected lot.');
-      }
+      // if (Number(data.net_weight) + issuedWeight > Number(lot.net_weight) + 0.001) {
+      //   throw new Error('Not enough weight available in the selected lot.');
+      // }
       
       // Clean up data
       const cleanData = { ...data };
@@ -307,10 +307,14 @@ export function setupIpcHandlers() {
 
       if (!includeAll) {
         results.where('available_bags > 0');
-      } else {
-        results.where('available_bags > 0 OR available_weight > 0');
       }
+      // else {
+      // results.where('available_bags > 0 OR available_weight > 0');
+      // }
 
+      if (filters && filters.over_sold_only === 'yes') {
+        results.andWhere('(available_bags < 0 OR available_weight < 0)');
+      }
       return await results.orderBy('available_bags', 'DESC').addOrderBy('gr_date', 'ASC').getRawMany();
     } catch (error) {
       console.error('Error in stock:get-available:', error);

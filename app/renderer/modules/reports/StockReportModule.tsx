@@ -9,7 +9,23 @@ import { Modal } from '../../components/Modal';
 const StockReportModule: React.FC = () => {
   const { invoke } = useIpc();
   const [data, setData] = useState<any[]>([]);
-  const [filters, setFilters] = useState({ garden: '', grade: '', lot_no: '', gr_no: '', claim_status: '', gr_date_from: '', gr_date_to: '', transport: '' });
+  const getInitialFilters = () => {
+    const now = new Date();
+    const fyYear = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
+    return { 
+      garden: '', 
+      grade: '', 
+      lot_no: '', 
+      gr_no: '', 
+      claim_status: '', 
+      gr_date_from: `${fyYear}-04-01`, 
+      gr_date_to: `${fyYear + 1}-03-31`, 
+      transport: '',
+      over_sold_only: 'no'
+    };
+  };
+
+  const [filters, setFilters] = useState(getInitialFilters);
   const [masters, setMasters] = useState({ gardens: [], grades: [], firms: [], transports: [] });
   const [claimRates, setClaimRates] = useState<Record<string, string>>({});
   const debouncedTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
@@ -319,7 +335,16 @@ const StockReportModule: React.FC = () => {
         </div>
 
         <div className='flex flex-wrap gap-2'>
-          <button onClick={() => setFilters({ garden: '', grade: '', lot_no: '', gr_no: '', claim_status: '', gr_date_from: '', gr_date_to: '', transport: '' })} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-xs font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          <select 
+            className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-xs font-bold rounded-lg outline-none focus:ring-2 focus:ring-primary transition-colors"
+            value={filters.over_sold_only}
+            onChange={e => setFilters(f => ({ ...f, over_sold_only: e.target.value }))}
+          >
+            <option value="no">Over Sold Stock Only</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+          <button onClick={() => setFilters(getInitialFilters())} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-xs font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
             <RotateCcw size={14} /> Reset Filters
           </button>
           <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 mx-1" />
