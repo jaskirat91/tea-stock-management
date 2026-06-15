@@ -403,7 +403,7 @@ export function setupIpcHandlers() {
     }
   });
 
-  ipcMain.handle('claim:report', async (_, {transportId, fromDate, toDate }: any) => {
+  ipcMain.handle('claim:report', async (_, {firmId, transportId, fromDate, toDate }: any) => {
     try {
       const issueSubQuery = AppDataSource.getRepository(IssueVoucher)
         .createQueryBuilder('issue')
@@ -428,6 +428,10 @@ export function setupIpcHandlers() {
         .setParameters(issueSubQuery.getParameters())
         .where('lot.claim_raised = true')
         .groupBy('voucher.id');
+
+        if (firmId) {
+          mainQuery.andWhere('voucher.firm_id = :firmId', { firmId });
+        }
 
         if(transportId) {
           mainQuery.andWhere('transport.id = :transportId', { transportId });

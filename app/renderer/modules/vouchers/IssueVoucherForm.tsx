@@ -35,6 +35,7 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
   const [masters, setMasters] = useState({ firms: [], parties: [], availableLots: [] });
   const [selectedGarden, setSelectedGarden] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
+  const [receiptDate, setReceiptDate] = useState<string>('');
 
   // Header navigation order
   const fieldOrder = [
@@ -67,6 +68,19 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
     }
     setTimeout(() => document.getElementById('firm_id')?.focus(), 100);
   }, [fetchMasters, initialData]);
+
+  useEffect(() => {
+    if (formData.receipt_voucher_lot_id && masters.availableLots.length > 0) {
+      const lot = masters.availableLots.find((l: any) => l.id === formData.receipt_voucher_lot_id) as any;
+      if (lot && lot.receipt_date) {
+        setReceiptDate(new Date(lot.receipt_date).toLocaleDateString('en-IN'));
+      } else {
+        setReceiptDate('-');
+      }
+    } else {
+      setReceiptDate('');
+    }
+  }, [formData.receipt_voucher_lot_id, masters.availableLots]);
 
   const gardens = Array.from(new Set(masters.availableLots.map((l: any) => l.garden_name))).map((name: any) => ({ id: name, name }));
   const grades = Array.from(new Set(masters.availableLots.filter((l: any) => l.garden_name === selectedGarden).map((l: any) => l.grade))).map((name: any) => ({ id: name, name }));
@@ -175,6 +189,7 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
              <SearchableSelect id="party_id" options={masters.parties} value={formData.party_id} onChange={id => setFormData(p=>({...p, party_id: id}))} onSelect={() => moveFocus('party_id', 'next')} placeholder="Select Party" masterRoute="Party Master" label="Party" />
              <div className="space-y-1.5"><label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Challan/DO Number</label><input id="challan_no" type="text" placeholder="Challan/DO Number" value={formData.challan_no} onChange={e => setFormData(p=>({...p, challan_no: e.target.value}))} onKeyDown={e => handleKeyDown(e, 'challan_no')} className="w-full px-4 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg outline-none text-sm" /></div>
              <div className="space-y-1.5"><label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Issue Date</label><input id="issue_date" type="date" value={formData.issue_date} onChange={e => setFormData(p=>({...p, issue_date: e.target.value}))} onKeyDown={e => handleKeyDown(e, 'issue_date')} className="w-full px-4 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg outline-none text-sm" /></div>
+             <div className="space-y-1.5"><label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Receipt Date</label><input type="text" value={receiptDate} className="w-full px-4 py-2 bg-slate-100 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg outline-none text-sm font-medium text-slate-600 dark:text-slate-400" disabled /></div>
           </div>
           
           <div className="grid grid-cols-3 gap-4">
