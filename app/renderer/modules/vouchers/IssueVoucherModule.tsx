@@ -4,7 +4,7 @@ import { useHotkeys } from '../../hooks/useHotkeys';
 import { useConfirmationStore } from '../../store/confirmationStore';
 import IssueVoucherForm from './IssueVoucherForm';
 import { 
-  Plus, Search, Edit2, Trash2, RotateCcw, ChevronLeft, ChevronRight, FileText, Calendar, User, Building, Leaf, Box
+  Plus, Search, Edit2, Trash2, RotateCcw, ChevronLeft, ChevronRight, FileText, Calendar, User, Building, Leaf, Box, Printer
 } from 'lucide-react';
 import { KbdBadge } from '../../components/KbdBadge';
 
@@ -66,6 +66,156 @@ const IssueVoucherModule: React.FC = () => {
   const handleEdit = (voucher: any) => {
     setEditingVoucher(voucher);
     setViewMode('form');
+  };
+
+  const handlePrint = (v: any) => {
+    const printWindow = document.createElement('iframe');
+    printWindow.style.position = 'fixed';
+    printWindow.style.right = '0';
+    printWindow.style.bottom = '0';
+    printWindow.style.width = '0';
+    printWindow.style.height = '0';
+    printWindow.style.border = '0';
+    document.body.appendChild(printWindow);
+
+    const doc = printWindow.contentWindow?.document;
+    if (!doc) return;
+
+    const firm = v.lot?.voucher?.firm || v.firm;
+    const transportName = v.lot?.voucher?.transport?.name || '';
+    const receiptDate = v.lot?.voucher?.receipt_date ? new Date(v.lot.voucher.receipt_date).toLocaleDateString('en-IN') : '';
+    const issueDate = new Date(v.issue_date).toLocaleDateString('en-IN');
+
+    const rate = v.price_per_kg ? Number(v.price_per_kg) : 0;
+    const totalAmount = rate > 0 ? (v.no_of_bags * v.weight_per_bag * rate) : 0;
+    
+    const formattedRate = rate > 0 ? rate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+    const formattedTotal = totalAmount > 0 ? totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+
+    const html = `
+      <html>
+        <head>
+          <style>
+            @media print {
+              @page { margin: 10mm; }
+              body { -webkit-print-color-adjust: exact; }
+            }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.4; color: #000; margin: 0; padding: 20px; }
+            .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+            .challan-title { text-align: center; text-decoration: underline; font-weight: bold; text-transform: uppercase; flex: 1; }
+            .firm-section { text-align: center; margin: 10px 0; }
+            .firm-name { font-size: 28px; font-weight: bold; margin: 0; text-transform: uppercase; }
+            .firm-tagline { font-weight: bold; font-size: 12px; margin-bottom: 5px; }
+            .firm-address { display: inline-block; padding: 4px 15px; background: #000; color: #fff; font-size: 12px; font-weight: bold; }
+            .voucher-info { display: flex; justify-content: space-between; margin-top: 20px; font-weight: bold; }
+            .challan-no { color: red; }
+            .party-info { margin-top: 10px; font-weight: bold; font-size: 15px; }
+            .gstin-note { border-bottom: 1.5px solid #000; margin-top: 15px; padding-bottom: 8px; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { border-bottom: 1.5px solid #000; padding: 8px 5px; text-align: left; font-weight: bold; }
+            td { padding: 8px 5px; vertical-align: top; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .lot-info-box { display: flex; flex-direction: column; align-items: center; border-top: 1px solid #000; margin-top: 5px; padding-top: 5px; }
+            .footer-section { margin-top: 30px; }
+            .signature-area { margin-top: 60px; text-align: right; font-weight: bold; }
+            .transport-name { text-align: right; font-weight: bold; border-top: 1.5px solid #000; padding-top: 5px; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="header-top">
+            <div style="width: 250px;">GSTIN: ${firm?.gstin || ''}</div>
+            <div class="challan-title">CHALLAN</div>
+            <div style="width: 250px; text-align: right;">Shop cum Resi. :</div>
+          </div>
+          <div style="text-align: right; font-size: 12px; font-weight: bold;">Tel: ${firm?.phone || ''}</div>
+
+          <div class="firm-section">
+            <h1 class="firm-name">${firm?.name || ''}</h1>
+            <div class="firm-tagline">TEA MERCHANTS & COMMISSION AGENTS</div>
+            <div class="firm-address">${firm?.address || ''}</div>
+          </div>
+
+          <div class="voucher-info">
+            <div>No. <span class="challan-no">${v.challan_no}</span></div>
+            <div>Dated : ${issueDate}</div>
+          </div>
+
+          <div class="party-info">
+            M/s. ${v.party?.name || ''} ${v.party?.address || ''}
+          </div>
+
+          <div class="gstin-note">
+            GSTIN: &nbsp;&nbsp;&nbsp;&nbsp; ${v.challan_no} &nbsp;&nbsp;&nbsp;&nbsp; will be issued after the receipt of this challan duly signed by the Customer.
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 50%;">Particulars</th>
+                <th class="text-center">No. of Bags</th>
+                <th class="text-center">Wt/Bag</th>
+                <th class="text-center">Rate (Rs.)</th>
+                <th class="text-center">Total (Rs.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="height: 150px">
+                <td>${v.no_of_bags} Bags of ${v.lot?.garden?.name || ''} ${v.lot?.grade || ''}</td>
+                <td class="text-center">${v.no_of_bags}</td>
+                <td class="text-center">${v.weight_per_bag}</td>
+                <td class="text-center">${formattedRate}</td>
+                <td class="text-center">${formattedTotal}</td>
+              </tr>
+              <tr>
+                <td>${v.remarks || ''}</td>
+                <td class="text-center">
+                  <div style="display: inline-block; min-width: 100px;">
+                    Lot No: ${v.lot?.lot_no || ''}
+                    <div style="border-top: 1px solid #000; margin: 2px 0;"></div>
+                    ${receiptDate}
+                  </div>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr style="height: 150px">
+                <td colspan="5"></td>                
+              </tr>
+              <tr style="border-top: 1.5px solid #000;">
+                <td colspan="4" style="text-align: center;">Subtotal</td>
+                <td class="text-center" style="font-weight: bold;">${formattedTotal}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="transport-name">${transportName}</div>
+
+          <div class="footer-section">
+            <div>HSN Code: 0902</div>
+            <div style="margin-top: 15px;">App. Value ..............................</div>
+            <div style="margin-top: 15px;">Delivered by ............................</div>
+            <div style="margin-top: 15px; font-weight: bold;">We receive the above mentioned goods quite intact as per our full satisfaction.</div>
+          </div>
+
+          <div class="signature-area">
+            ................................... Buyer's Signature
+          </div>
+
+          <script>
+            window.onload = () => {
+              window.print();
+              setTimeout(() => { window.frameElement.remove(); }, 100);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    doc.open();
+    doc.write(html);
+    doc.close();
   };
 
   const handleDelete = (id: string) => {
@@ -244,6 +394,13 @@ const IssueVoucherModule: React.FC = () => {
                     </td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => handlePrint(v)}
+                          className="p-2 rounded-lg hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors"
+                          title="Print Voucher"
+                        >
+                          <Printer size={16} />
+                        </button>
                         <button 
                           onClick={() => handleEdit(v)}
                           className="p-2 rounded-lg hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors"

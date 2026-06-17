@@ -9,6 +9,7 @@ import { Grade } from "../../domain/entities/Grade";
 import { ReceiptVoucher } from "../../domain/entities/ReceiptVoucher";
 import { ReceiptVoucherLot } from "../../domain/entities/ReceiptVoucherLot";
 import { IssueVoucher } from "../../domain/entities/IssueVoucher";
+import { MakeChallanNoUnique1718457600000 } from "./migrations/1718457600000-MakeChallanNoUnique";
 import path from "node:path";
 import { app } from "electron";
 
@@ -33,7 +34,8 @@ export const AppDataSource = new DataSource({
     ReceiptVoucherLot,
     IssueVoucher
   ],
-  migrations: [],
+  migrations: [MakeChallanNoUnique1718457600000],
+  migrationsRun: false,
   subscribers: [],
 });
 

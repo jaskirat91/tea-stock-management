@@ -29,6 +29,7 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
     weight_per_bag: 0,
     shortage_weight: 0,
     net_weight: 0,
+    price_per_kg: 0,
     issue_date: new Date().toISOString().split('T')[0],
     remarks: ''
   });
@@ -41,7 +42,7 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
   const fieldOrder = [
     'firm_id', 'voucher_no', 'party_id', 'challan_no', 'issue_date',
     'garden_id', 'grade', 'receipt_voucher_lot_id', 
-    'no_of_bags', 'weight_per_bag', 'shortage_weight', 'remarks'
+    'no_of_bags', 'weight_per_bag', 'shortage_weight', 'price_per_kg', 'remarks'
   ];
 
   const fetchMasters = useCallback(async () => {
@@ -95,10 +96,13 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
   const handleFirmChange = async (firmId: string) => {
     setFormData(prev => ({ ...prev, firm_id: firmId }));
     try {
-      const nextNo = await invoke('issue-voucher:get-next-no', firmId);
-      setFormData(prev => ({ ...prev, voucher_no: nextNo }));
+      const [nextNo, nextChallan] = await Promise.all([
+        invoke('issue-voucher:get-next-no', firmId),
+        invoke('issue-voucher:get-next-challan-no', firmId)
+      ]);
+      setFormData(prev => ({ ...prev, voucher_no: nextNo, challan_no: nextChallan }));
     } catch (err) {
-      console.error('Failed to generate voucher no:', err);
+      console.error('Failed to generate numbers:', err);
     }
   };
 
@@ -201,11 +205,12 @@ const IssueVoucherForm: React.FC<IssueVoucherFormProps> = ({ onClose, onSaved, i
             }} onSelect={() => moveFocus('receipt_voucher_lot_id', 'next')} placeholder="Select Lot" masterRoute="" label="Lot" />
           </div>
           
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-5 gap-4">
              <div className="space-y-1.5"><label className="block text-sm font-bold text-slate-700 dark:text-slate-300">No. of Bags</label><input id="no_of_bags" type="number" placeholder="No. of Bags" value={formData.no_of_bags} onChange={e => setFormData(p=>({...p, no_of_bags: Number(e.target.value)}))} onKeyDown={e => handleKeyDown(e, 'no_of_bags')} className="w-full px-4 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg outline-none text-sm" /></div>
              <div className="space-y-1.5"><label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Wt/Bag</label><input id="weight_per_bag" type="number" placeholder="Wt/Bag" value={formData.weight_per_bag} onChange={e => setFormData(p=>({...p, weight_per_bag: Number(e.target.value)}))} onKeyDown={e => handleKeyDown(e, 'weight_per_bag')} className="w-full px-4 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg outline-none text-sm" /></div>
              <div className="space-y-1.5"><label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Shortage Wt</label><input id="shortage_weight" type="number" placeholder="Shortage Wt" value={formData.shortage_weight} onChange={e => setFormData(p=>({...p, shortage_weight: Number(e.target.value)}))} onKeyDown={e => handleKeyDown(e, 'shortage_weight')} className="w-full px-4 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg outline-none text-sm" /></div>
              <div className="space-y-1.5"><label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Net Weight</label><input type="number" placeholder="Net Weight" value={formData.net_weight.toFixed(3)} className="w-full px-4 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg outline-none text-sm" disabled /></div>
+             <div className="space-y-1.5"><label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Price/Kg</label><input id="price_per_kg" type="number" placeholder="Price/Kg" value={formData.price_per_kg} onChange={e => setFormData(p=>({...p, price_per_kg: Number(e.target.value)}))} onKeyDown={e => handleKeyDown(e, 'price_per_kg')} className="w-full px-4 py-2 bg-slate-50 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-lg outline-none text-sm" /></div>
           </div>
           <div className="space-y-1.5">
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Remarks</label>

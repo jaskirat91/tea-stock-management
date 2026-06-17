@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { app, BrowserWindow, nativeImage } from 'electron';
+import { app, BrowserWindow, nativeImage, dialog } from 'electron';
 import * as path from 'path';
 import { AppDataSource } from './infrastructure/database/dataSource';
 import { setupIpcHandlers } from './interfaces/ipc/handlers';
@@ -15,16 +15,16 @@ async function bootstrap() {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
 
-      // In production, sync schema if it's a fresh installation
+      // In production, sync schema if it's a fresh installation or incomplete
       if (!isDev) {
         const result = await AppDataSource.query(
-          `SELECT name FROM sqlite_master WHERE type='table' AND name='app_settings'`,
+          `SELECT name FROM sqlite_master WHERE type='table' AND name='issue_vouchers'`,
         );
         if (result.length === 0) {
           await AppDataSource.synchronize();
-          console.log('Fresh installation detected. Database schema synchronized.');
+          console.log('Fresh installation or incomplete schema detected. Database schema synchronized.');
         } else {
-          // Run migrations in both dev and production
+          // Run migrations for existing installations
           const migrations = await AppDataSource.runMigrations();
           if (migrations.length > 0) {
             console.log(
@@ -88,8 +88,12 @@ async function bootstrap() {
       mainWindow?.show();
       mainWindow?.focus();
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error bootstrapping application', error);
+    dialog.showErrorBox(
+        'Startup Error',
+        `The application failed to start.\n\nError: ${error?.message || 'Unknown error'}\n\nStack: ${error?.stack || 'No stack trace available'}`
+      );
   }
 }
 

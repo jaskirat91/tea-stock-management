@@ -128,12 +128,42 @@ export function setupIpcHandlers() {
       }
       
       return `I-${firm.code}/${fy}/${nextNo}`;
-    } catch (error) {
+      } catch (error) {
       console.error('Error in issue-voucher:get-next-no:', error);
       throw error;
-    }
-  });
+      }
+      });
 
+      ipcMain.handle('issue-voucher:get-next-challan-no', async (_, firmId: string) => {
+      try {
+      const repository = AppDataSource.getRepository(IssueVoucher);
+      const firmRepository = AppDataSource.getRepository(Firm);
+
+      const firm = await firmRepository.findOneBy({ id: firmId });
+      if (!firm) throw new Error('Firm not found');
+
+      const lastVoucher = await repository.findOne({
+       where: { firm_id: firmId, challan_no: Like(`${firm.code}/%`) },
+       order: { challan_no: 'DESC' }
+      });
+
+      let nextNo = 1;
+      if (lastVoucher) {
+       const parts = lastVoucher.challan_no.split('/');
+       if (parts.length >= 2) {
+         const lastNo = parseInt(parts[parts.length - 1]);
+         if (!isNaN(lastNo)) {
+           nextNo = lastNo + 1;
+         }
+       }
+      }
+
+      return `${firm.code}/${nextNo}`;
+      } catch (error) {
+      console.error('Error in issue-voucher:get-next-challan-no:', error);
+      throw error;
+      }
+      });
   ipcMain.handle('issue-voucher:get-all', async () => {
     return await AppDataSource.getRepository(IssueVoucher).find({ order: { voucher_no: 'ASC' } as any });
   });
@@ -166,12 +196,11 @@ export function setupIpcHandlers() {
       
       const [items, total] = await repository.findAndCount({
         where,
-        relations: ['firm', 'party', 'lot', 'lot.garden'],
+        relations: ['firm', 'party', 'lot', 'lot.garden', 'lot.voucher', 'lot.voucher.firm', 'lot.voucher.transport'],
         order: { issue_date: 'DESC' },
         skip: (page - 1) * limit,
         take: limit,
       });
-
       return { items, total, page, totalPages: Math.ceil(total / limit) };
     } catch (error) {
       console.error('Error in issue-voucher:get-paginated:', error);

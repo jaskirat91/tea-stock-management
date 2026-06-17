@@ -266,7 +266,7 @@ const StockReportModule: React.FC = () => {
 
   const exportCSV = () => {
     const csv = Papa.unparse(filteredData.map(i => ({
-        'GR Date': i.gr_date ? new Date(i.gr_date).toLocaleDateString('en-IN') : '-', Garden: i.garden_name, Grade: i.grade, Lot: i.lot_no, 'GR No': i.gr_no || '-', 'Wt/Bag (Kg)': Number(i.weight_per_bag).toLocaleString('en-IN', {maximumFractionDigits: 3}), 'Bags Received': i.total_bags, 'Avail Bags': i.available_bags, 'Avail Wt (Kg)': i.available_weight, 'Claim Raised': i.claim_raised ? 'Yes' : 'No', 'Claim Rate': i.claim_rate, 'Claim Amount': i.claim_amount
+        'GR Date': i.gr_date ? new Date(i.gr_date).toLocaleDateString('en-IN') : '-', 'Receipt Date': i.receipt_date ? new Date(i.receipt_date).toLocaleDateString('en-IN') : '-', 'Transport': i.transport_name, 'Garden': i.garden_name, 'Grade': i.grade, 'Lot': i.lot_no, 'GR No': i.gr_no || '-', 'Wt/Bag (Kg)': Number(i.weight_per_bag).toLocaleString('en-IN', {maximumFractionDigits: 3}), 'Bags Received': i.total_bags, 'Avail Bags': i.available_bags, 'Avail Wt (Kg)': i.available_weight, 'Claim Raised': i.claim_raised ? 'Yes' : 'No', 'Claim Rate': i.claim_rate, 'Claim Amount': i.claim_amount
     })));
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -281,9 +281,11 @@ const StockReportModule: React.FC = () => {
         const doc = new jsPDF('landscape');
         doc.text('Stock Report', 14, 15);
         autoTable(doc, {
-            head: [['GR Date', 'Garden', 'Grade', 'Lot No', 'GR No', 'Wt/Bag', 'Bags Rec', 'Avail Bags', 'Avail Wt', 'Claim']],
+            head: [['GR Date', 'Receipt Date', 'Transport Name', 'Garden', 'Grade', 'Lot No', 'GR No', 'Wt/Bag', 'Bags Rec', 'Avail Bags', 'Avail Wt', 'Claim Raised', 'Claim Rate', 'Claim Amount']],
             body: filteredData.map(i => [
               i.gr_date ? new Date(i.gr_date).toLocaleDateString('en-IN') : '-',
+              i.receipt_date ? new Date(i.receipt_date).toLocaleDateString('en-IN') : '-',
+              i.transport_name,
               i.garden_name, 
               i.grade, 
               i.lot_no, 
@@ -292,7 +294,9 @@ const StockReportModule: React.FC = () => {
               i.total_bags, 
               i.available_bags, 
               Number(i.available_weight).toLocaleString('en-IN', {maximumFractionDigits: 3}),
-              i.claim_raised ? `₹${i.claim_amount}` : '-'
+              i.claim_raised ? 'Yes' : 'No',
+              Number(i.claim_rate).toLocaleString('en-IN', {maximumFractionDigits: 2}),
+              Number(i.claim_amount).toLocaleString('en-IN', {maximumFractionDigits: 2})
             ]),
             startY: 20,
             styles: { fontSize: 8 }

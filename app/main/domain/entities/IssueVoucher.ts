@@ -40,7 +40,7 @@ export class IssueVoucher {
   @JoinColumn({ name: 'receipt_voucher_lot_id' })
   lot!: ReceiptVoucherLot;
 
-  @Column()
+  @Column({ unique: true })
   challan_no!: string;
 
   @Column({ type: 'integer', default: 0 })
@@ -54,6 +54,9 @@ export class IssueVoucher {
 
   @Column({ type: 'decimal', precision: 12, scale: 3, default: 0 })
   net_weight!: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0, nullable: true })
+  price_per_kg?: number;
 
   @Column({ type: 'date', default: new Date().toISOString().split('T')[0] })
   issue_date!: Date;
