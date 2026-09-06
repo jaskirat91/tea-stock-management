@@ -6,6 +6,7 @@
 [![Framework](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://reactjs.org)
 [![Database](https://img.shields.io/badge/Database-SQLite%203-003B57?logo=sqlite&logoColor=white)](https://sqlite.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![Sponsor jaskirat91](https://img.shields.io/badge/Sponsor-jaskirat91-ea4aaa?logo=github-sponsors&logoColor=white)](https://github.com/sponsors/jaskirat91)
 
 ---
 
@@ -20,6 +21,7 @@
 - [Getting Started](#-getting-started)
 - [Keyboard Shortcuts Reference](#-keyboard-shortcuts-reference)
 - [Data Storage & Security](#-data-storage--security)
+- [Support & Sponsorship](#-support--sponsorship)
 
 ---
 
@@ -258,6 +260,26 @@ Designed for zero-mouse operations. Use the following shortcuts for maximum prod
 - **100% Local & Private**: All business metrics, client lists, vouchers, and lot records are stored in a local SQLite file (`database.sqlite`) in the application root directory.
 - **No Cloud Dependency**: The application functions entirely offline. Your commercial pricing and inventory figures never leave your machine.
 - **Data Backups**: Simply back up or copy the `database.sqlite` file to a secure external drive or cloud drive to preserve your historical stock ledger.
+
+---
+
+## 💖 Support & Sponsorship
+
+If **Tea Stock Management** is helping your tea merchant operations streamline inventory, issue delivery challans, or recover transport transit losses, consider supporting the ongoing development and maintenance!
+
+<div align="center">
+
+### Sponsor jaskirat91
+
+<br />
+
+<iframe src="https://github.com/sponsors/jaskirat91/button" title="Sponsor jaskirat91" height="32" width="114" style="border: 0; border-radius: 6px;"></iframe>
+
+<br /><br />
+
+<iframe src="https://github.com/sponsors/jaskirat91/card" title="Sponsor jaskirat91" height="225" width="600" style="border: 0;"></iframe>
+
+</div>
 
 ---
 
