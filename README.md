@@ -6,6 +6,7 @@
 [![Framework](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://reactjs.org)
 [![Database](https://img.shields.io/badge/Database-SQLite%203-003B57?logo=sqlite&logoColor=white)](https://sqlite.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
 [![Sponsor jaskirat91](https://img.shields.io/badge/Sponsor-jaskirat91-ea4aaa?logo=github-sponsors&logoColor=white)](https://github.com/sponsors/jaskirat91)
 
 ---
@@ -277,6 +278,11 @@ If **Tea Stock Management** is helping your tea merchant operations streamline i
 
 ---
 
-## 📄 License
+## 📄 License & Commercial Royalty Terms
 
-This software project is licensed under private commercial license. All rights reserved. Powered by **Supreme Software Solutions**.
+This project is licensed under a **Dual / Source-Available Model**:
+
+- **Free for Non-Commercial & Educational Use**: Free to inspect, use, modify, and extend for non-commercial, personal, research, or educational purposes under the terms of the **[PolyForm Noncommercial License 1.0.0](LICENSE)**.
+- **Commercial & Enterprise Use**: Any deployment, distribution, SaaS integration, or usage for commercial profit or within revenue-generating business operations **requires a Commercial Royalty License** from the copyright holder ([@jaskirat91](https://github.com/jaskirat91)).
+
+For commercial licensing inquiries and royalty arrangements, please contact the author via [GitHub Sponsors](https://github.com/sponsors/jaskirat91) or reach out directly on GitHub.

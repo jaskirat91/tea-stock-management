@@ -2,7 +2,8 @@
   "name": "tea-stock-management",
   "version": "1.0.0",
   "description": "Keyboard-First Tea Stock Management System",
-  "author": "Tea Stock Management",
+  "author": "Jaskirat Singh (jaskirat91)",
+  "license": "SEE LICENSE IN LICENSE",
   "main": "dist/main/app/main/index.js",
   "scripts": {
     "dev": "concurrently -n VITE,ELECTRON -c cyan,magenta \"vite\" \"wait-on tcp:5173 && tsc -p tsconfig.node.json && NODE_ENV=development electron .\"",
