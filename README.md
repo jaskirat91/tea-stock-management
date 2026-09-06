@@ -269,15 +269,9 @@ If **Tea Stock Management** is helping your tea merchant operations streamline i
 
 <div align="center">
 
-### Sponsor jaskirat91
-
-<br />
-
-<iframe src="https://github.com/sponsors/jaskirat91/button" title="Sponsor jaskirat91" height="32" width="114" style="border: 0; border-radius: 6px;"></iframe>
-
-<br /><br />
-
-<iframe src="https://github.com/sponsors/jaskirat91/card" title="Sponsor jaskirat91" height="225" width="600" style="border: 0;"></iframe>
+<a href="https://github.com/sponsors/jaskirat91">
+  <img src="https://img.shields.io/badge/Sponsor%20%E2%9D%A4-jaskirat91-ea4aaa?style=for-the-badge&logo=github-sponsors&logoColor=white" alt="Sponsor jaskirat91" height="45" />
+</a>
 
 </div>
 
